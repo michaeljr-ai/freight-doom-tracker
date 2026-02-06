@@ -19,23 +19,28 @@ COPY freight_doom_engine/src/ src/
 RUN cargo build --release
 
 # ---- Stage 2: Build Rails App ----
-FROM ruby:3.2-slim-bookworm AS rails-builder
+FROM ruby:3.3-slim-bookworm AS rails-builder
 
 RUN apt-get update && apt-get install -y \
     build-essential \
     libpq-dev \
     libsqlite3-dev \
+    libyaml-dev \
     git \
     && rm -rf /var/lib/apt/lists/*
 
+# Install matching Bundler version
+RUN gem install bundler -v 4.0.6
+
 WORKDIR /rails-app
 COPY rails_app/Gemfile rails_app/Gemfile.lock ./
-RUN bundle install --without development test --jobs 4 --retry 3
+RUN bundle config set --local without 'development test' && \
+    bundle install --jobs 4 --retry 3
 
 COPY rails_app/ .
 
 # ---- Stage 3: Final Runtime Image ----
-FROM ruby:3.2-slim-bookworm
+FROM ruby:3.3-slim-bookworm
 
 RUN apt-get update && apt-get install -y \
     ca-certificates \
@@ -45,7 +50,8 @@ RUN apt-get update && apt-get install -y \
     redis-server \
     curl \
     nodejs \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && gem install bundler -v 4.0.6
 
 WORKDIR /app
 
