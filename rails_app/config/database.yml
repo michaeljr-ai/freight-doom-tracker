@@ -1,19 +1,21 @@
-# SQLite configuration for Replit portability
-# No external database server required
+# SQLite for development, PostgreSQL for production (Railway)
 
 default: &default
-  adapter: sqlite3
   pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
   timeout: 5000
 
 development:
   <<: *default
+  adapter: sqlite3
   database: db/development.sqlite3
 
 test:
   <<: *default
+  adapter: sqlite3
   database: db/test.sqlite3
 
 production:
-  <<: *default
-  database: db/production.sqlite3
+  adapter: postgresql
+  encoding: unicode
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  url: <%= ENV["DATABASE_URL"] %>
