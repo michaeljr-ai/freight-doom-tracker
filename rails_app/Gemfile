@@ -1,0 +1,50 @@
+source "https://rubygems.org"
+
+ruby ">= 3.1.0"
+
+# Core Rails
+gem "rails", "~> 7.1"
+gem "sprockets-rails"
+gem "puma", ">= 5.0"
+gem "sqlite3", "~> 1.4"
+gem "jbuilder"
+
+# Hotwire
+gem "turbo-rails"
+gem "stimulus-rails"
+gem "importmap-rails"
+
+# Redis & Action Cable
+gem "redis", ">= 4.0.1"
+gem "kredis"
+
+# Background Jobs
+gem "good_job"
+
+# UI & Styling
+gem "tailwindcss-rails"
+
+# Notifications
+gem "noticed", "~> 2.0"
+
+# Pagination
+gem "pagy", "~> 6.0"
+
+# Charts & Analytics
+gem "chartkick"
+gem "groupdate"
+
+# Performance
+gem "bootsnap", require: false
+
+# Timezone data for Windows
+gem "tzinfo-data", platforms: %i[windows jruby]
+
+group :development, :test do
+  gem "debug", platforms: %i[mri windows]
+  gem "faker"
+end
+
+group :development do
+  gem "web-console"
+end

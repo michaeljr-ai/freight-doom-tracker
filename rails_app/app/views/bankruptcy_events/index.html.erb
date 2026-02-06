@@ -1,0 +1,166 @@
+<div class="scanline-overlay"></div>
+
+<header class="header">
+  <h1 class="header-title">FREIGHT DOOM TRACKER</h1>
+  <p class="header-subtitle">BANKRUPTCY EVENT SURVEILLANCE // ALL EVENTS</p>
+  <div class="header-status">
+    <span class="health-indicator health-green"></span>
+    <span class="status-text">SYSTEM ONLINE</span>
+    <span class="status-separator">|</span>
+    <span class="status-text"><%= @pagy.count %> EVENTS TRACKED</span>
+  </div>
+</header>
+
+<section class="filter-controls">
+  <%= form_with url: bankruptcy_events_path, method: :get, local: true, class: "filter-form" do |f| %>
+    <div class="filter-group">
+      <label class="filter-label" for="source_filter">SOURCE</label>
+      <select name="source" id="source_filter" class="filter-select">
+        <option value="">ALL SOURCES</option>
+        <option value="pacer" <%= 'selected' if params[:source] == 'pacer' %>>PACER</option>
+        <option value="fmcsa" <%= 'selected' if params[:source] == 'fmcsa' %>>FMCSA</option>
+        <option value="court_feed" <%= 'selected' if params[:source] == 'court_feed' %>>COURT FEED</option>
+        <option value="sec_filing" <%= 'selected' if params[:source] == 'sec_filing' %>>SEC FILING</option>
+        <option value="news" <%= 'selected' if params[:source] == 'news' %>>NEWS</option>
+        <option value="rust_engine" <%= 'selected' if params[:source] == 'rust_engine' %>>RUST ENGINE</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label class="filter-label" for="chapter_filter">CHAPTER</label>
+      <select name="chapter" id="chapter_filter" class="filter-select">
+        <option value="">ALL CHAPTERS</option>
+        <option value="7" <%= 'selected' if params[:chapter] == '7' %>>CHAPTER 7</option>
+        <option value="11" <%= 'selected' if params[:chapter] == '11' %>>CHAPTER 11</option>
+        <option value="13" <%= 'selected' if params[:chapter] == '13' %>>CHAPTER 13</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label class="filter-label" for="status_filter">STATUS</label>
+      <select name="status" id="status_filter" class="filter-select">
+        <option value="">ALL STATUSES</option>
+        <option value="new" <%= 'selected' if params[:status] == 'new' %>>NEW</option>
+        <option value="confirmed" <%= 'selected' if params[:status] == 'confirmed' %>>CONFIRMED</option>
+        <option value="investigating" <%= 'selected' if params[:status] == 'investigating' %>>INVESTIGATING</option>
+        <option value="resolved" <%= 'selected' if params[:status] == 'resolved' %>>RESOLVED</option>
+        <option value="false_alarm" <%= 'selected' if params[:status] == 'false_alarm' %>>FALSE ALARM</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label class="filter-label" for="query_filter">SEARCH</label>
+      <input type="text" name="query" id="query_filter" value="<%= params[:query] %>"
+             class="filter-input" placeholder="Company, DOT#, MC#...">
+    </div>
+
+    <div class="filter-group filter-actions">
+      <button type="submit" class="filter-btn filter-btn-apply">APPLY FILTERS</button>
+      <%= link_to "RESET", bankruptcy_events_path, class: "filter-btn filter-btn-reset" %>
+    </div>
+  <% end %>
+</section>
+
+<%= turbo_frame_tag "events_list" do %>
+  <section class="events-table-container">
+    <table class="events-table">
+      <thead>
+        <tr>
+          <th class="table-header">COMPANY</th>
+          <th class="table-header">DOT #</th>
+          <th class="table-header">MC #</th>
+          <th class="table-header">CHAPTER</th>
+          <th class="table-header">SOURCE</th>
+          <th class="table-header">STATUS</th>
+          <th class="table-header">CONFIDENCE</th>
+          <th class="table-header">DETECTED AT</th>
+          <th class="table-header">ACTIONS</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @bankruptcy_events.each do |event| %>
+          <tr class="event-row <%= 'event-row-new' if event.detected_at && event.detected_at > 1.hour.ago %>">
+            <td class="table-cell cell-company">
+              <span class="company-name"><%= event.company_name %></span>
+            </td>
+            <td class="table-cell cell-dot">
+              <code class="mono-value"><%= event.dot_number || "---" %></code>
+            </td>
+            <td class="table-cell cell-mc">
+              <code class="mono-value"><%= event.mc_number || "---" %></code>
+            </td>
+            <td class="table-cell cell-chapter">
+              <% if event.chapter %>
+                <span class="chapter-badge chapter-<%= event.chapter %>">CH. <%= event.chapter %></span>
+              <% else %>
+                <span class="chapter-badge">---</span>
+              <% end %>
+            </td>
+            <td class="table-cell cell-source">
+              <span class="source-badge source-<%= event.source %>">
+                <%= event.source.gsub("_", " ").upcase %>
+              </span>
+            </td>
+            <td class="table-cell cell-status">
+              <span class="status-badge status-<%= event.status %>">
+                <%= event.status.gsub("_", " ").upcase %>
+              </span>
+            </td>
+            <td class="table-cell cell-confidence">
+              <div class="confidence-bar-container">
+                <div class="confidence-bar" style="width: <%= event.confidence_percentage %>%">
+                  <span class="confidence-value"><%= event.confidence_percentage %>%</span>
+                </div>
+              </div>
+            </td>
+            <td class="table-cell cell-detected">
+              <span class="timestamp" title="<%= event.detected_at&.strftime('%Y-%m-%d %H:%M:%S UTC') %>">
+                <%= event.time_ago_detected %>
+              </span>
+            </td>
+            <td class="table-cell cell-actions">
+              <%= link_to "INSPECT", bankruptcy_event_path(event), class: "action-btn action-inspect" %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+
+    <% if @bankruptcy_events.empty? %>
+      <div class="empty-state">
+        <div class="empty-state-icon">&#x26A0;</div>
+        <p class="empty-state-text">NO EVENTS MATCHING CURRENT FILTERS</p>
+        <p class="empty-state-subtext">Adjust filter parameters or wait for new detections</p>
+      </div>
+    <% end %>
+  </section>
+
+  <%# Pagy pagination %>
+  <% if @pagy.pages > 1 %>
+    <nav class="pagination-controls">
+      <div class="pagination-info">
+        PAGE <%= @pagy.page %> OF <%= @pagy.pages %>
+        // <%= @pagy.count %> TOTAL EVENTS
+      </div>
+      <div class="pagination-buttons">
+        <% if @pagy.prev %>
+          <%= link_to "PREV", bankruptcy_events_path(page: @pagy.prev, source: params[:source], chapter: params[:chapter], status: params[:status], query: params[:query]), class: "pagination-btn" %>
+        <% end %>
+
+        <% @pagy.series.each do |item| %>
+          <% if item.is_a?(Integer) %>
+            <%= link_to item, bankruptcy_events_path(page: item, source: params[:source], chapter: params[:chapter], status: params[:status], query: params[:query]), class: "pagination-btn" %>
+          <% elsif item.is_a?(String) %>
+            <span class="pagination-btn pagination-btn-active"><%= item %></span>
+          <% elsif item == :gap %>
+            <span class="pagination-gap">&hellip;</span>
+          <% end %>
+        <% end %>
+
+        <% if @pagy.next %>
+          <%= link_to "NEXT", bankruptcy_events_path(page: @pagy.next, source: params[:source], chapter: params[:chapter], status: params[:status], query: params[:query]), class: "pagination-btn" %>
+        <% end %>
+      </div>
+    </nav>
+  <% end %>
+<% end %>

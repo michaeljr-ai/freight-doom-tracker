@@ -1,0 +1,132 @@
+<div class="scanline-overlay"></div>
+
+<header class="header">
+  <h1 class="header-title">FREIGHT DOOM TRACKER</h1>
+  <p class="header-subtitle">EVENT INSPECTION // DETAIL VIEW</p>
+</header>
+
+<div class="detail-container">
+  <div class="detail-nav">
+    <%= link_to bankruptcy_events_path, class: "back-btn" do %>
+      <span class="back-arrow">&larr;</span> RETURN TO EVENT LIST
+    <% end %>
+    <span class="detail-event-id">EVENT #<%= @bankruptcy_event.id %></span>
+  </div>
+
+  <div class="detail-card">
+    <div class="detail-card-header">
+      <h2 class="detail-company-name"><%= @bankruptcy_event.company_name %></h2>
+      <% if @bankruptcy_event.chapter %>
+        <span class="chapter-badge chapter-<%= @bankruptcy_event.chapter %> chapter-badge-large">
+          CHAPTER <%= @bankruptcy_event.chapter %>
+        </span>
+      <% end %>
+    </div>
+
+    <div class="detail-grid">
+      <div class="detail-field">
+        <span class="detail-label">DOT NUMBER</span>
+        <span class="detail-value mono-value"><%= @bankruptcy_event.dot_number || "NOT AVAILABLE" %></span>
+      </div>
+
+      <div class="detail-field">
+        <span class="detail-label">MC NUMBER</span>
+        <span class="detail-value mono-value"><%= @bankruptcy_event.mc_number || "NOT AVAILABLE" %></span>
+      </div>
+
+      <div class="detail-field">
+        <span class="detail-label">SOURCE</span>
+        <span class="detail-value">
+          <span class="source-badge source-<%= @bankruptcy_event.source %>">
+            <%= @bankruptcy_event.source.gsub("_", " ").upcase %>
+          </span>
+        </span>
+      </div>
+
+      <div class="detail-field">
+        <span class="detail-label">STATUS</span>
+        <span class="detail-value">
+          <span class="status-badge status-<%= @bankruptcy_event.status %>">
+            <%= @bankruptcy_event.status.gsub("_", " ").upcase %>
+          </span>
+        </span>
+      </div>
+
+      <div class="detail-field">
+        <span class="detail-label">CONFIDENCE SCORE</span>
+        <span class="detail-value">
+          <div class="confidence-bar-container confidence-bar-large">
+            <div class="confidence-bar" style="width: <%= @bankruptcy_event.confidence_percentage %>%">
+              <span class="confidence-value"><%= @bankruptcy_event.confidence_percentage %>%</span>
+            </div>
+          </div>
+          <span class="confidence-level confidence-<%= @bankruptcy_event.confidence_level %>">
+            <%= @bankruptcy_event.confidence_level.upcase %>
+          </span>
+        </span>
+      </div>
+
+      <div class="detail-field">
+        <span class="detail-label">COURT</span>
+        <span class="detail-value"><%= @bankruptcy_event.court || "NOT AVAILABLE" %></span>
+      </div>
+
+      <div class="detail-field">
+        <span class="detail-label">FILING DATE</span>
+        <span class="detail-value"><%= @bankruptcy_event.filing_date&.strftime("%Y-%m-%d") || "NOT AVAILABLE" %></span>
+      </div>
+
+      <div class="detail-field">
+        <span class="detail-label">DETECTED AT</span>
+        <span class="detail-value">
+          <%= @bankruptcy_event.detected_at&.strftime("%Y-%m-%d %H:%M:%S UTC") %>
+          <span class="relative-time">(<%= @bankruptcy_event.time_ago_detected %>)</span>
+        </span>
+      </div>
+
+      <div class="detail-field">
+        <span class="detail-label">RECORD CREATED</span>
+        <span class="detail-value">
+          <%= @bankruptcy_event.created_at&.strftime("%Y-%m-%d %H:%M:%S UTC") %>
+        </span>
+      </div>
+
+      <div class="detail-field">
+        <span class="detail-label">LAST UPDATED</span>
+        <span class="detail-value">
+          <%= @bankruptcy_event.updated_at&.strftime("%Y-%m-%d %H:%M:%S UTC") %>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <% if @bankruptcy_event.raw_data.present? && @bankruptcy_event.raw_data != {} %>
+    <div class="detail-card raw-data-card">
+      <div class="detail-card-header">
+        <h3 class="raw-data-title">RAW SOURCE DATA</h3>
+        <span class="raw-data-warning">UNPROCESSED // FOR ANALYSIS ONLY</span>
+      </div>
+      <pre class="raw-data-content"><%= JSON.pretty_generate(@bankruptcy_event.raw_data) rescue @bankruptcy_event.raw_data.to_s %></pre>
+    </div>
+  <% end %>
+
+  <% if @related_events.any? %>
+    <div class="detail-card related-events-card">
+      <div class="detail-card-header">
+        <h3 class="raw-data-title">RELATED EVENTS</h3>
+        <span class="raw-data-warning"><%= @related_events.count %> MATCHES FOUND</span>
+      </div>
+      <div class="related-events-list">
+        <% @related_events.each do |related| %>
+          <div class="related-event-item">
+            <%= link_to bankruptcy_event_path(related), class: "related-event-link" do %>
+              <span class="related-company"><%= related.company_name %></span>
+              <span class="source-badge source-<%= related.source %> source-badge-sm"><%= related.source.gsub("_", " ").upcase %></span>
+              <span class="related-time"><%= related.time_ago_detected %></span>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+</div>

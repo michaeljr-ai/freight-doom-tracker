@@ -1,0 +1,97 @@
+<%# Single bankruptcy event card - used in live feed and event list %>
+<%# Broadcasts via Turbo Streams for real-time updates %>
+
+<%
+  # Color mapping for source badges
+  source_colors = {
+    "pacer"       => "bg-blue-500/20 text-blue-400 border-blue-500/30",
+    "fmcsa"       => "bg-green-500/20 text-green-400 border-green-500/30",
+    "court_feed"  => "bg-purple-500/20 text-purple-400 border-purple-500/30",
+    "news"        => "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+    "sec_filing"  => "bg-orange-500/20 text-orange-400 border-orange-500/30",
+    "rust_engine" => "bg-red-500/20 text-red-400 border-red-500/30",
+    "manual"      => "bg-gray-500/20 text-gray-400 border-gray-500/30"
+  }
+  source_class = source_colors[bankruptcy_event.source] || source_colors["manual"]
+
+  # Confidence bar color
+  conf_color = case bankruptcy_event.confidence_level
+               when "high" then "bg-red-500"
+               when "medium" then "bg-yellow-500"
+               else "bg-gray-500"
+               end
+
+  # Is this event new (less than 60 seconds old)?
+  is_new = bankruptcy_event.detected_at && (Time.current - bankruptcy_event.detected_at) < 60
+%>
+
+<%= tag.div id: dom_id(bankruptcy_event),
+    class: "bg-doom-dark border rounded-lg p-3 transition-all duration-500 hover:border-doom-red/40 #{is_new ? 'border-doom-red/60 event-new doom-glow' : 'border-doom-border'}" do %>
+
+  <!-- Top Row: Company name + Source badge -->
+  <div class="flex items-start justify-between mb-2">
+    <div class="flex-1 min-w-0">
+      <a href="<%= bankruptcy_event_path(bankruptcy_event) %>"
+         class="text-sm font-semibold text-gray-200 hover:text-doom-red transition truncate block">
+        <% if is_new %>
+          <span class="inline-block w-1.5 h-1.5 rounded-full bg-doom-red animate-pulse mr-1"></span>
+        <% end %>
+        <%= bankruptcy_event.company_name %>
+      </a>
+    </div>
+
+    <!-- Source Badge -->
+    <span class="ml-2 px-2 py-0.5 text-[10px] uppercase tracking-wider border rounded font-medium shrink-0 <%= source_class %>">
+      <%= bankruptcy_event.source.gsub("_", " ") %>
+    </span>
+  </div>
+
+  <!-- Middle Row: DOT#, MC#, Chapter -->
+  <div class="flex items-center space-x-3 text-xs text-gray-500 mb-2">
+    <% if bankruptcy_event.dot_number.present? %>
+      <span class="flex items-center">
+        <span class="text-gray-600 mr-1">DOT#</span>
+        <span class="text-gray-400 font-medium"><%= bankruptcy_event.dot_number %></span>
+      </span>
+    <% end %>
+    <% if bankruptcy_event.mc_number.present? %>
+      <span class="flex items-center">
+        <span class="text-gray-600 mr-1">MC#</span>
+        <span class="text-gray-400 font-medium"><%= bankruptcy_event.mc_number %></span>
+      </span>
+    <% end %>
+    <% if bankruptcy_event.chapter.present? %>
+      <span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase
+        <%= bankruptcy_event.chapter == 7 ? 'bg-red-900/40 text-red-400' : 'bg-orange-900/40 text-orange-400' %>">
+        CH. <%= bankruptcy_event.chapter %>
+      </span>
+    <% end %>
+  </div>
+
+  <!-- Court Info -->
+  <% if bankruptcy_event.court.present? %>
+    <div class="text-xs text-gray-600 mb-2 truncate">
+      <span class="text-gray-700">Court:</span> <%= bankruptcy_event.court %>
+    </div>
+  <% end %>
+
+  <!-- Bottom Row: Confidence + Timestamp -->
+  <div class="flex items-center justify-between">
+    <!-- Confidence Score Bar -->
+    <div class="flex items-center space-x-2 flex-1">
+      <span class="text-[10px] text-gray-600 uppercase">Conf:</span>
+      <div class="flex-1 max-w-[100px] bg-doom-black rounded-full h-1.5 overflow-hidden">
+        <div class="<%= conf_color %> h-full rounded-full transition-all duration-1000"
+             style="width: <%= bankruptcy_event.confidence_percentage %>%"></div>
+      </div>
+      <span class="text-[10px] font-mono <%= bankruptcy_event.confidence_level == 'high' ? 'text-red-400' : 'text-gray-500' %>">
+        <%= bankruptcy_event.confidence_percentage %>%
+      </span>
+    </div>
+
+    <!-- Timestamp -->
+    <div class="text-[10px] text-gray-600 font-mono ml-2 shrink-0">
+      <%= bankruptcy_event.time_ago_detected %>
+    </div>
+  </div>
+<% end %>

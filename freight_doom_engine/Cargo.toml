@@ -1,0 +1,111 @@
+[package]
+name = "freight_doom_engine"
+version = "0.1.0"
+edition = "2021"
+authors = ["The Freight Doom Collective"]
+description = """
+An absurdly over-engineered bankruptcy tracking engine for logistics companies.
+Because when freight companies go bankrupt, we should detect it with the same
+intensity as a NORAD missile warning system.
+"""
+
+# We need ALL the dependencies. Every single one. This is not a drill.
+# If your Cargo.toml doesn't look like a CVS receipt, you're not trying hard enough.
+
+[dependencies]
+# === ASYNC RUNTIME === #
+# Tokio: because blocking I/O is for people who enjoy watching paint dry
+tokio = { version = "1", features = ["full", "rt-multi-thread", "macros", "signal", "sync", "time", "io-util", "net"] }
+
+# === HTTP CLIENT === #
+# reqwest: for when you need to yell at government APIs at the speed of light
+reqwest = { version = "0.12", features = ["json", "gzip", "brotli", "deflate", "rustls-tls"], default-features = false }
+
+# === SERIALIZATION === #
+# serde: turning structs into bytes and back since 2015
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# === XML PARSING === #
+# Because PACER still thinks it's 2003 and XML is the future
+quick-xml = { version = "0.36", features = ["serialize"] }
+
+# === REDIS === #
+# For screaming bankruptcy events into the void (that Rails listens to)
+redis = { version = "0.27", features = ["tokio-comp", "connection-manager"] }
+
+# === LOCK-FREE CONCURRENCY === #
+# crossbeam: because mutexes are for cowards
+crossbeam = "0.8"
+crossbeam-channel = "0.5"
+
+# === PARALLEL ITERATORS === #
+# rayon: making your CPU cry tears of parallel joy
+rayon = "1.10"
+
+# === BLOOM FILTER === #
+# Probabilistic deduplication: "probably not a duplicate" is good enough for government work
+bloomfilter = "1"
+
+# === FAST TEXT SCANNING === #
+# memchr: SIMD-accelerated byte scanning, because strstr() is too slow for our bankruptcy obsession
+memchr = "2"
+# Aho-Corasick: multi-pattern matching at the speed of existential dread
+aho-corasick = "1"
+
+# === STRUCTURED LOGGING === #
+# tracing: because println! debugging is a war crime
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "json"] }
+
+# === LRU CACHE === #
+# For when the bloom filter says "maybe" and we need a definitive answer
+lru = "0.12"
+
+# === FAST LOCKS === #
+# parking_lot: mutexes that don't take lunch breaks
+parking_lot = "0.12"
+
+# === TIME === #
+# chrono: because SystemTime::now() is for savages
+chrono = { version = "0.4", features = ["serde"] }
+
+# === UUID === #
+# Every bankruptcy event deserves its own universally unique identifier
+uuid = { version = "1", features = ["v4", "serde"] }
+
+# === URL PARSING === #
+url = "2"
+urlencoding = "2"
+
+# === ASYNC UTILITIES === #
+# futures: because one async library is never enough
+futures = "0.3"
+
+# === METRICS HTTP SERVER === #
+# Raw TCP because even axum is too much abstraction for our metrics endpoint
+
+# === ENVIRONMENT VARIABLES === #
+# dotenvy: for people who can't be bothered to export things manually
+dotenvy = "0.15"
+
+# === ERROR HANDLING === #
+# anyhow + thiserror: because unwrap() is a ticking time bomb
+anyhow = "1"
+thiserror = "2"
+
+# === ATOMIC TYPES === #
+# For lock-free metrics counters that would make a nuclear physicist proud
+portable-atomic = { version = "1", features = ["float"] }
+
+[profile.release]
+# Maximum optimization because every nanosecond counts when tracking financial doom
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = "symbols"
+
+[profile.dev]
+# Even in dev mode, we optimize. Bankruptcy waits for no compiler.
+opt-level = 1

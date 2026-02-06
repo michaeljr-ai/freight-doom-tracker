@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FREIGHT DOOM TRACKER | Logistics Bankruptcy Monitor</title>
+
+  <%= csrf_meta_tags %>
+  <%= csp_meta_tag %>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            doom: {
+              black: '#0a0a0a',
+              dark: '#111111',
+              panel: '#1a1a1a',
+              border: '#2a2a2a',
+              text: '#888888',
+              red: '#ff2020',
+              darkred: '#8b0000',
+              orange: '#ff6600',
+              yellow: '#ffaa00',
+              green: '#00ff66',
+              blue: '#0088ff',
+              purple: '#8844ff',
+            }
+          },
+          fontFamily: {
+            mono: ['JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', 'monospace'],
+            display: ['Oswald', 'Impact', 'Arial Black', 'sans-serif'],
+          },
+          animation: {
+            'pulse-red': 'pulse-red 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'scan-line': 'scan-line 3s linear infinite',
+            'glow': 'glow 2s ease-in-out infinite alternate',
+            'slide-in': 'slide-in 0.5s ease-out',
+            'flicker': 'flicker 0.15s infinite',
+          },
+          keyframes: {
+            'pulse-red': {
+              '0%, 100%': { boxShadow: '0 0 5px rgba(255, 32, 32, 0.5)' },
+              '50%': { boxShadow: '0 0 20px rgba(255, 32, 32, 0.8), 0 0 40px rgba(255, 32, 32, 0.3)' },
+            },
+            'scan-line': {
+              '0%': { transform: 'translateY(-100%)' },
+              '100%': { transform: 'translateY(100%)' },
+            },
+            'glow': {
+              '0%': { textShadow: '0 0 5px rgba(255, 32, 32, 0.5)' },
+              '100%': { textShadow: '0 0 20px rgba(255, 32, 32, 0.8), 0 0 40px rgba(255, 32, 32, 0.4)' },
+            },
+            'slide-in': {
+              '0%': { transform: 'translateX(-20px)', opacity: '0' },
+              '100%': { transform: 'translateX(0)', opacity: '1' },
+            },
+            'flicker': {
+              '0%': { opacity: '1' },
+              '50%': { opacity: '0.8' },
+              '100%': { opacity: '1' },
+            },
+          },
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts for industrial look -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Chartkick -->
+  <script src="https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <!-- Turbo -->
+  <script type="module">
+    import * as Turbo from "https://cdn.jsdelivr.net/npm/@hotwired/turbo@7.3.0/dist/turbo.es2017-esm.js"
+  </script>
+
+  <!-- Action Cable -->
+  <script type="module">
+    import { createConsumer } from "https://cdn.jsdelivr.net/npm/@rails/actioncable@7.1.0/src/index.js"
+
+    const consumer = createConsumer();
+
+    // Subscribe to bankruptcy events channel
+    consumer.subscriptions.create("BankruptcyEventsChannel", {
+      connected() {
+        console.log("[DOOM TRACKER] WebSocket connected");
+        const indicator = document.getElementById("connection-indicator");
+        if (indicator) {
+          indicator.classList.remove("bg-red-500");
+          indicator.classList.add("bg-green-500");
+          indicator.title = "LIVE - Connected";
+        }
+        const statusText = document.getElementById("connection-status");
+        if (statusText) statusText.textContent = "LIVE";
+      },
+
+      disconnected() {
+        console.log("[DOOM TRACKER] WebSocket disconnected");
+        const indicator = document.getElementById("connection-indicator");
+        if (indicator) {
+          indicator.classList.remove("bg-green-500");
+          indicator.classList.add("bg-red-500");
+          indicator.title = "DISCONNECTED";
+        }
+        const statusText = document.getElementById("connection-status");
+        if (statusText) statusText.textContent = "OFFLINE";
+      },
+
+      received(data) {
+        console.log("[DOOM TRACKER] Received:", data);
+        // Flash the screen border red on new events
+        if (data.type === "new_event") {
+          document.body.classList.add("ring-2", "ring-red-500");
+          setTimeout(() => {
+            document.body.classList.remove("ring-2", "ring-red-500");
+          }, 1000);
+
+          // Play alert sound effect (visual flash instead)
+          const flash = document.getElementById("alert-flash");
+          if (flash) {
+            flash.classList.remove("hidden");
+            setTimeout(() => flash.classList.add("hidden"), 500);
+          }
+        }
+      }
+    });
+
+    window.doomConsumer = consumer;
+  </script>
+
+  <style>
+    /* Custom scrollbar for the dark theme */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #111; }
+    ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #555; }
+
+    /* CRT scan line overlay effect */
+    .crt-overlay::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.03) 0px,
+        rgba(0, 0, 0, 0.03) 1px,
+        transparent 1px,
+        transparent 2px
+      );
+      z-index: 9999;
+    }
+
+    /* Glowing border for critical panels */
+    .doom-glow {
+      box-shadow: 0 0 10px rgba(255, 32, 32, 0.3),
+                  inset 0 0 10px rgba(255, 32, 32, 0.1);
+    }
+
+    .doom-glow-green {
+      box-shadow: 0 0 10px rgba(0, 255, 102, 0.3),
+                  inset 0 0 10px rgba(0, 255, 102, 0.1);
+    }
+
+    /* Noise texture overlay */
+    .noise-bg {
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    }
+
+    /* Pulsing new event animation */
+    .event-new {
+      animation: slide-in 0.5s ease-out, pulse-glow 3s ease-in-out;
+    }
+
+    @keyframes pulse-glow {
+      0% { border-color: rgba(255, 32, 32, 0.8); box-shadow: 0 0 20px rgba(255, 32, 32, 0.5); }
+      100% { border-color: rgba(255, 32, 32, 0.2); box-shadow: none; }
+    }
+  </style>
+</head>
+<body class="bg-doom-black text-gray-300 font-mono min-h-screen crt-overlay noise-bg">
+  <!-- Alert flash overlay -->
+  <div id="alert-flash" class="hidden fixed inset-0 bg-red-900/20 z-50 pointer-events-none"></div>
+
+  <!-- Top navigation bar -->
+  <nav class="bg-doom-dark border-b border-doom-border sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-14">
+        <!-- Logo / Title -->
+        <div class="flex items-center space-x-4">
+          <a href="/" class="flex items-center space-x-2 group">
+            <span class="text-doom-red text-2xl font-display font-bold tracking-wider animate-glow">
+              &#x26A0; FREIGHT DOOM TRACKER
+            </span>
+          </a>
+        </div>
+
+        <!-- Navigation Links -->
+        <div class="flex items-center space-x-6 text-sm">
+          <a href="/" class="text-doom-red hover:text-red-400 transition font-medium uppercase tracking-wide">
+            Dashboard
+          </a>
+          <a href="/bankruptcy_events" class="text-gray-400 hover:text-gray-200 transition uppercase tracking-wide">
+            All Events
+          </a>
+          <a href="/carriers" class="text-gray-400 hover:text-gray-200 transition uppercase tracking-wide">
+            Carriers
+          </a>
+
+          <!-- Connection indicator -->
+          <div class="flex items-center space-x-2 ml-6 border-l border-doom-border pl-6">
+            <div id="connection-indicator" class="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></div>
+            <span id="connection-status" class="text-xs uppercase tracking-widest text-gray-500">
+              CONNECTING
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main content -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <%= yield %>
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-doom-border bg-doom-dark mt-12">
+    <div class="max-w-7xl mx-auto px-4 py-4">
+      <div class="flex items-center justify-between text-xs text-gray-600 font-mono">
+        <span>FREIGHT DOOM TRACKER v1.0.0 // RUST ENGINE + RAILS 7 + TURBO STREAMS</span>
+        <span>MONITORING FREIGHT INDUSTRY COLLAPSE IN REAL-TIME</span>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

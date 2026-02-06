@@ -1,0 +1,253 @@
+<%# FREIGHT DOOM TRACKER - Main Dashboard %>
+<%# Real-time bankruptcy monitoring war room %>
+
+<!-- Giant Header -->
+<div class="text-center mb-8 pt-4">
+  <h1 class="text-5xl md:text-7xl font-display font-bold text-doom-red tracking-widest animate-glow uppercase">
+    FREIGHT DOOM TRACKER
+  </h1>
+  <p class="text-gray-500 mt-2 text-sm tracking-[0.3em] uppercase font-mono">
+    Real-Time Logistics Bankruptcy Intelligence // Powered by Rust + Rails
+  </p>
+  <div class="flex items-center justify-center mt-3 space-x-4 text-xs text-gray-600">
+    <span>SCAN ACTIVE</span>
+    <span class="text-doom-red animate-pulse">&#x25CF;</span>
+    <span>SOURCES: PACER / FMCSA / COURT FEEDS / SEC / NEWS</span>
+    <span class="text-doom-red animate-pulse">&#x25CF;</span>
+    <span>UPDATED: <%= Time.current.strftime("%Y-%m-%d %H:%M:%S UTC") %></span>
+  </div>
+</div>
+
+<!-- Live Event Counter -->
+<div class="flex justify-center mb-8">
+  <div class="bg-doom-dark border border-doom-red/30 rounded-lg px-8 py-4 doom-glow text-center">
+    <div class="text-xs text-gray-500 uppercase tracking-widest mb-1">Total Tracked Bankruptcies</div>
+    <span id="event_counter" class="text-red-400 font-mono text-5xl font-bold animate-pulse">
+      <%= @stats[:total] %>
+    </span>
+    <div class="text-xs text-gray-600 mt-1">
+      <span class="text-doom-orange"><%= @stats[:today] %> today</span> //
+      <span class="text-doom-yellow"><%= @stats[:this_week] %> this week</span> //
+      <span class="text-gray-500"><%= @stats[:this_month] %> this month</span>
+    </div>
+  </div>
+</div>
+
+<!-- Stats Cards Row -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+  <!-- Today's Events -->
+  <div class="bg-doom-panel border border-doom-border rounded-lg p-4 hover:border-doom-red/50 transition">
+    <div class="text-xs text-gray-500 uppercase tracking-wider">Today</div>
+    <div class="text-3xl font-bold text-doom-red mt-1"><%= @stats[:today] %></div>
+    <div class="text-xs text-gray-600 mt-1">new filings detected</div>
+  </div>
+
+  <!-- By Chapter -->
+  <div class="bg-doom-panel border border-doom-border rounded-lg p-4 hover:border-doom-orange/50 transition">
+    <div class="text-xs text-gray-500 uppercase tracking-wider">Chapter 11</div>
+    <div class="text-3xl font-bold text-doom-orange mt-1"><%= @stats[:by_chapter][11] || 0 %></div>
+    <div class="text-xs text-gray-600 mt-1">reorganization filings</div>
+  </div>
+
+  <!-- Chapter 7 -->
+  <div class="bg-doom-panel border border-doom-border rounded-lg p-4 hover:border-doom-yellow/50 transition">
+    <div class="text-xs text-gray-500 uppercase tracking-wider">Chapter 7</div>
+    <div class="text-3xl font-bold text-doom-yellow mt-1"><%= @stats[:by_chapter][7] || 0 %></div>
+    <div class="text-xs text-gray-600 mt-1">liquidation filings</div>
+  </div>
+
+  <!-- High Confidence -->
+  <div class="bg-doom-panel border border-doom-border rounded-lg p-4 hover:border-doom-green/50 transition">
+    <div class="text-xs text-gray-500 uppercase tracking-wider">High Confidence</div>
+    <div class="text-3xl font-bold text-doom-green mt-1"><%= @stats[:high_confidence_count] %></div>
+    <div class="text-xs text-gray-600 mt-1">avg: <%= @stats[:avg_confidence] %>%</div>
+  </div>
+</div>
+
+<!-- Source Stats Row -->
+<div class="grid grid-cols-3 md:grid-cols-6 gap-3 mb-8">
+  <% sources = @stats[:by_source] || {} %>
+  <% source_colors = { "pacer" => "blue", "fmcsa" => "green", "court_feed" => "purple", "news" => "yellow", "sec_filing" => "orange", "rust_engine" => "red", "manual" => "gray" } %>
+  <% source_colors.each do |source, color| %>
+    <div class="bg-doom-panel border border-doom-border rounded p-3 text-center">
+      <div class="text-xs text-gray-500 uppercase"><%= source.gsub("_", " ") %></div>
+      <div class="text-xl font-bold text-<%= color %>-400 mt-1"><%= sources[source] || 0 %></div>
+    </div>
+  <% end %>
+</div>
+
+<!-- Main Content: Two Column Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+  <!-- Left Column: Charts (2/3 width) -->
+  <div class="lg:col-span-2 space-y-6">
+
+    <!-- Events Over Time Chart -->
+    <div class="bg-doom-panel border border-doom-border rounded-lg p-6">
+      <h2 class="text-sm font-display text-gray-400 uppercase tracking-wider mb-4">
+        &#x1F4C8; Bankruptcy Filings - Last 30 Days
+      </h2>
+      <div id="events-over-time-chart" style="height: 250px;">
+        <% if @events_over_time.any? %>
+          <%= line_chart @events_over_time,
+                colors: ["#ff2020"],
+                library: {
+                  scales: {
+                    x: { ticks: { color: "#666" }, grid: { color: "#222" } },
+                    y: { ticks: { color: "#666" }, grid: { color: "#222" } }
+                  },
+                  plugins: {
+                    legend: { display: false }
+                  },
+                  elements: {
+                    line: { borderWidth: 2 },
+                    point: { radius: 3, backgroundColor: "#ff2020" }
+                  }
+                } %>
+        <% else %>
+          <div class="flex items-center justify-center h-full text-gray-600 text-sm">
+            NO DATA YET - AWAITING FIRST BANKRUPTCY SIGNALS
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Events By Source Chart -->
+    <div class="bg-doom-panel border border-doom-border rounded-lg p-6">
+      <h2 class="text-sm font-display text-gray-400 uppercase tracking-wider mb-4">
+        Events by Source
+      </h2>
+      <% if @events_by_source.any? %>
+        <%= pie_chart @events_by_source,
+              colors: ["#0088ff", "#00ff66", "#8844ff", "#ffaa00", "#ff6600", "#ff2020", "#666666"],
+              donut: true,
+              library: {
+                plugins: {
+                  legend: { labels: { color: "#888" } }
+                }
+              } %>
+      <% else %>
+        <div class="text-center text-gray-600 text-sm py-8">
+          AWAITING SOURCE DISTRIBUTION DATA
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Right Column: Live Feed (1/3 width) -->
+  <div class="space-y-6">
+
+    <!-- Critical Alerts -->
+    <% if @critical_alerts.any? %>
+      <div class="bg-doom-dark border border-doom-red/50 rounded-lg p-4 doom-glow">
+        <h2 class="text-sm font-display text-doom-red uppercase tracking-wider mb-3 flex items-center">
+          <span class="animate-pulse mr-2">&#x26A0;</span>
+          CRITICAL ALERTS TODAY
+        </h2>
+        <div class="space-y-2">
+          <% @critical_alerts.each do |alert| %>
+            <div class="border-l-2 border-doom-red pl-3 py-1">
+              <div class="text-sm text-red-300 font-medium"><%= alert.company_name %></div>
+              <div class="text-xs text-gray-500">
+                Ch.<%= alert.chapter %> // <%= alert.confidence_percentage %>% conf // <%= alert.time_ago_detected %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+
+    <!-- Live Event Feed -->
+    <div class="bg-doom-panel border border-doom-border rounded-lg p-4">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-sm font-display text-gray-400 uppercase tracking-wider flex items-center">
+          <span class="w-2 h-2 rounded-full bg-doom-red animate-pulse mr-2"></span>
+          Live Feed
+        </h2>
+        <a href="/bankruptcy_events" class="text-xs text-gray-500 hover:text-gray-300 transition uppercase">
+          View All &rarr;
+        </a>
+      </div>
+
+      <!-- Turbo Frame for live-updating event list -->
+      <%= turbo_stream_from "bankruptcy_events" %>
+
+      <div id="bankruptcy_events_feed" class="space-y-3 max-h-[600px] overflow-y-auto">
+        <% if @recent_events.any? %>
+          <% @recent_events.each do |event| %>
+            <%= render partial: "bankruptcy_events/bankruptcy_event", locals: { bankruptcy_event: event } %>
+          <% end %>
+        <% else %>
+          <div class="text-center py-12 text-gray-600">
+            <div class="text-4xl mb-3">&#x1F4E1;</div>
+            <div class="text-sm uppercase tracking-wider">Scanning for bankruptcy signals...</div>
+            <div class="text-xs mt-1">Rust engine is monitoring PACER, FMCSA, court feeds</div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- System Health -->
+    <div class="bg-doom-panel border border-doom-border rounded-lg p-4">
+      <h2 class="text-sm font-display text-gray-400 uppercase tracking-wider mb-3">
+        System Status
+      </h2>
+      <div class="space-y-2 text-xs">
+        <div class="flex items-center justify-between">
+          <span class="text-gray-500">Redis Connection</span>
+          <span class="flex items-center">
+            <span class="w-2 h-2 rounded-full mr-1 <%= @system_health[:redis_connected] ? 'bg-green-500' : 'bg-red-500' %>"></span>
+            <span class="<%= @system_health[:redis_connected] ? 'text-green-400' : 'text-red-400' %>">
+              <%= @system_health[:redis_connected] ? 'CONNECTED' : 'OFFLINE' %>
+            </span>
+          </span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-gray-500">Database</span>
+          <span class="flex items-center">
+            <span class="w-2 h-2 rounded-full bg-green-500 mr-1"></span>
+            <span class="text-green-400"><%= @system_health[:db_size] %> records</span>
+          </span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-gray-500">Events/Hour</span>
+          <span class="text-doom-yellow"><%= @system_health[:events_last_hour] %></span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-gray-500">Last Event</span>
+          <span class="text-gray-400">
+            <% if @system_health[:last_event_at] %>
+              <%= time_ago_in_words(@system_health[:last_event_at]) %> ago
+            <% else %>
+              No events yet
+            <% end %>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter Controls -->
+    <div class="bg-doom-panel border border-doom-border rounded-lg p-4">
+      <h2 class="text-sm font-display text-gray-400 uppercase tracking-wider mb-3">
+        Quick Filters
+      </h2>
+      <div class="space-y-2">
+        <a href="/bankruptcy_events?chapter=7" class="block text-xs px-3 py-2 bg-doom-dark border border-doom-border rounded hover:border-doom-yellow/50 text-gray-400 hover:text-doom-yellow transition">
+          Chapter 7 - Liquidations
+        </a>
+        <a href="/bankruptcy_events?chapter=11" class="block text-xs px-3 py-2 bg-doom-dark border border-doom-border rounded hover:border-doom-orange/50 text-gray-400 hover:text-doom-orange transition">
+          Chapter 11 - Reorganizations
+        </a>
+        <a href="/bankruptcy_events?min_confidence=0.8" class="block text-xs px-3 py-2 bg-doom-dark border border-doom-border rounded hover:border-doom-red/50 text-gray-400 hover:text-doom-red transition">
+          High Confidence Only (&gt;80%)
+        </a>
+        <a href="/bankruptcy_events?source=pacer" class="block text-xs px-3 py-2 bg-doom-dark border border-doom-border rounded hover:border-doom-blue/50 text-gray-400 hover:text-doom-blue transition">
+          PACER Source
+        </a>
+        <a href="/bankruptcy_events?source=rust_engine" class="block text-xs px-3 py-2 bg-doom-dark border border-doom-border rounded hover:border-doom-red/50 text-gray-400 hover:text-doom-red transition">
+          Rust Engine Detections
+        </a>
+      </div>
+    </div>
+  </div>
+</div>

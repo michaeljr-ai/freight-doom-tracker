@@ -1,0 +1,28 @@
+# Rust
+freight_doom_engine/target/
+
+# Rails
+rails_app/log/*
+rails_app/tmp/*
+rails_app/db/*.sqlite3
+rails_app/db/*.sqlite3-*
+rails_app/storage/*
+rails_app/.bundle/
+rails_app/vendor/bundle/
+rails_app/node_modules/
+
+# OS
+.DS_Store
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.local
+.env.production
+
+# Replit
+.cache/
+.config/
+.upm/

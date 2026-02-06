@@ -1,0 +1,14 @@
+run = "bash start.sh"
+language = "bash"
+
+[nix]
+channel = "stable-23_11"
+
+[env]
+REDIS_URL = "redis://localhost:6379"
+RAILS_ENV = "production"
+SECRET_KEY_BASE = "freight_doom_super_secret_key_base_change_in_production_please"
+RUST_LOG = "info"
+
+[deployment]
+run = ["bash", "start.sh"]
